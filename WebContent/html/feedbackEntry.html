@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+<title>Feedback Entry</title>
+</head>
+<body>
+	<form action="/feedbackEntry" method="post">
+	<div>
+		<table>
+			<tr>
+				<td colspan="4" align="center"><b>CGI Training Feedback form</b></td>
+			</tr>
+			<tr></tr>
+			<tr>
+				<td>Name:</td><td><input type="text" name="name"/></td>
+				<td>PSA Id:</td><td><input type="text" name="psa_id"/></td>
+			</tr>
+			<tr>
+				<td>Course Name:</td><td><input type="text" name="courseName"/></td>
+				<td>Trainer Name:</td><td><input type="text" name="trainerName"/></td>
+			</tr>
+			<tr>
+				<td>From Date:</td><td><input type="text" name="fromDate"/></td>
+				<td>To Date:</td><td><input type="text" name="toDate"/></td>
+			</tr>
+			<tr></tr>
+		</table>
+		<table>
+			<tr>
+				<td colspan="2"><b>Facilitator</b></td>
+			</tr>
+			<tr></tr>
+			<tr>
+				<td>1. Does facilitator explains the course contents in detail?</td>
+				<td><select name="rating_1">
+						<option value=""></option>
+						<option value="1">Strongly Disagree</option>
+						<option value="2">Disagree</option>
+						<option value="3">Neutral</option>
+						<option value="4">Agree</option>
+						<option value="5">Strongly Agree</option>
+				</select></td>
+			</tr>
+			<tr>
+				<td>2. Does facilitator answered all the questions raised by you?</td>
+				<td><select name="rating_2">
+						<option value=""></option>
+						<option value="1">Strongly Disagree</option>
+						<option value="2">Disagree</option>
+						<option value="3">Neutral</option>
+						<option value="4">Agree</option>
+						<option value="5">Strongly Agree</option>
+				</select></td>
+			</tr>
+			
+			<tr>
+				<td>3. Does class started and ended on time?</td>
+				<td><select name="rating_3">
+						<option value=""></option>
+						<option value="1">Strongly Disagree</option>
+						<option value="2">Disagree</option>
+						<option value="3">Neutral</option>
+						<option value="4">Agree</option>
+						<option value="5">Strongly Agree</option>
+				</select></td>
+			</tr>
+			<tr></tr>
+			<tr>
+				<td colspan="2"><b>Infrastructure</b></td>
+			</tr>
+			<tr></tr>
+			<tr>
+				<td>4. Does equipment worked well?</td>
+				<td><select name="rating_4">
+						<option value=""></option>
+						<option value="1">Strongly Disagree</option>
+						<option value="2">Disagree</option>
+						<option value="3">Neutral</option>
+						<option value="4">Agree</option>
+						<option value="5">Strongly Agree</option>
+				</select></td>
+			</tr>
+			<tr>
+				<td>5. Is the seating arrangement comfortable?</td>
+				<td><select name="rating_5">
+						<option value=""></option>
+						<option value="1">Strongly Disagree</option>
+						<option value="2">Disagree</option>
+						<option value="3">Neutral</option>
+						<option value="4">Agree</option>
+						<option value="5">Strongly Agree</option>
+				</select></td>
+			</tr>
+			<tr>
+				<td align="center">
+					<button value="Cancel">Cancel</button>
+				</td>
+				<td align="center">
+					<button value="Submit">Submit</button>
+				</td>
+			</tr>
+		</table>
+	</div>
+	</form>
+</body>
+</html>
