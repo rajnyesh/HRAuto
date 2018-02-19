@@ -2,10 +2,10 @@
   "name": "hrautoamtion",
   "version": "1.0.0",
   "description": "",
-  "main": "hrautomation.js"
+  "main": "mainNode.js"
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node hrautomation.js"
+    "start": "node mainNode.js"
   },
   "author": "",
   "license": "ISC",
