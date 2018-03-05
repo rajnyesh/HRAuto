@@ -1,0 +1,20 @@
+no suitable httpmessageconverter found for request type and content type multipart/form-data
+http://forum.spring.io/forum/spring-projects/android/126794-no-suitable-httpmessageconverter-found
+https://stackoverflow.com/questions/40011050/no-suitable-httpmessageconverter-found-error-while-executing-rest-service-that-t
+
+Approach -1
+------------
+HttpMessageConverter<Object> jackson = new MappingJackson2HttpMessageConverter();
+HttpMessageConverter<Resource> resource = new ResourceHttpMessageConverter();
+FormHttpMessageConverter formHttpMessageConverter = new FormHttpMessageConverter();
+formHttpMessageConverter.addPartConverter(jackson);
+formHttpMessageConverter.addPartConverter(resource); // This is hope driven programming
+RestTemplate restTemplate = new RestTemplate(Arrays.asList(jackson, resource, formHttpMessageConverter));
+ResponseEntity<String> response =  restTemplate.exchange(URI, HttpMethod.POST, requestEntity, String.class);
+
+Approach -2
+-----------
+RestTemplate restTemplate = getRestTemplate();
+restTemplate.getMessageConverters().add(new FormHttpMessageConverter());
+restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+return restTemplate.postForObject(URI, requestEntity, APIResponseUpload.class);
