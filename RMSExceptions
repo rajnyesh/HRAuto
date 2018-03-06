@@ -18,3 +18,159 @@ RestTemplate restTemplate = getRestTemplate();
 restTemplate.getMessageConverters().add(new FormHttpMessageConverter());
 restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
 return restTemplate.postForObject(URI, requestEntity, APIResponseUpload.class);
+
+
+package com.tmobile.bif.conference.service.impl;
+
+import org.apache.commons.codec.binary.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tmobile.bif.conference.config.FbiConferenceConstants;
+import com.tmobile.bif.conference.invite.bean.ConferenceInviteIcs;
+import com.tmobile.bif.conference.model.OneApiMmsSendRequest;
+import com.tmobile.bif.conference.model.OutboundMMSMessage;
+import com.tmobile.bif.conference.model.OutboundMessageRequest;
+import com.tmobile.bif.conference.model.RmsMmsNotificationRequestBean;
+import com.tmobile.bif.conference.model.RmsMmsNotificationResponseBean;
+import com.tmobile.bif.conference.service.RmsMmsNotificationService;
+
+@Service
+public class RmsMmsNotificationServiceImpl implements RmsMmsNotificationService {
+
+	@Value("${oneapi.mms.send.url}")
+	private String oneApiSendMmsUrl;
+
+	@Autowired
+	private RestTemplate restTemplate;
+
+	private static final Logger logger = LoggerFactory.getLogger(RmsMmsNotificationServiceImpl.class);
+
+	public RmsMmsNotificationResponseBean sendMmsRmsNotification(
+			RmsMmsNotificationRequestBean rmsMmsNotificationRequestBean, ConferenceInviteIcs conferenceInviteIcs)
+			throws Exception {
+
+		logger.debug("sendMmsRmsNotification:: start of rms messageing");
+		MultiValueMap<String, Object> mainMultipartRequest = new LinkedMultiValueMap<String, Object>();
+		
+		mainMultipartRequest.add("application", buildMainJsonEntity(rmsMmsNotificationRequestBean));
+		mainMultipartRequest.add("innerTextAttchmntEntity", buildInnerTextAttchmntEntity(conferenceInviteIcs));
+		logger.debug("mainMultipartRequest\n" + mainMultipartRequest);
+		
+		HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<MultiValueMap<String, Object>>(mainMultipartRequest, buildRequestEntityHeaders());
+		logger.debug("requestEntity.......\n" + requestEntity);
+		
+		ResponseEntity<RmsMmsNotificationResponseBean> response = null;
+		RmsMmsNotificationResponseBean res = new RmsMmsNotificationResponseBean();
+		try {
+			response = restTemplate.exchange(oneApiSendMmsUrl, HttpMethod.POST, requestEntity,
+					RmsMmsNotificationResponseBean.class);
+		} catch (Exception ex) {
+			logger.debug("catch exception " + ex.getMessage());
+			ex.printStackTrace();
+		}
+		logger.debug("response" + response);
+		logger.debug(
+				"send http post request to: " + oneApiSendMmsUrl + "; response status:" + response.getStatusCode());
+		if (response.getStatusCode() != HttpStatus.CREATED) {
+
+			res.setStatusCode("-6203");
+			res.setErrorDescription("http post to url: " + oneApiSendMmsUrl + " not return http ok. with the http body:"
+					+ oneApiSendMmsUrl);
+			res.setErrorCode("-6203");
+			return res;
+		} else {
+			res.setStatusCode("0");
+			res.setSuccessResponseBodyString(response.getBody().getSuccessResponseBodyString());
+			return res;
+		}
+	}
+	
+	public HttpEntity<String> buildMainJsonEntity(RmsMmsNotificationRequestBean rmsMmsNotificationRequestBean) throws JsonProcessingException{
+		ObjectMapper objmapper = new ObjectMapper();
+		OutboundMessageRequest outboundMMSMessageRequest = new OutboundMessageRequest();
+		outboundMMSMessageRequest.setAddress(rmsMmsNotificationRequestBean.getAddress());
+		if (rmsMmsNotificationRequestBean.getClientCorrelator() != null) {
+			outboundMMSMessageRequest.setClientCorrelator(rmsMmsNotificationRequestBean.getClientCorrelator());
+		}
+		OutboundMMSMessage outboundSMSTextMessage = new OutboundMMSMessage();
+		outboundSMSTextMessage.setPriority(rmsMmsNotificationRequestBean.getOutboundMMSMessage().getPriority());
+		outboundSMSTextMessage.setSubject(rmsMmsNotificationRequestBean.getOutboundMMSMessage().getSubject());
+		outboundMMSMessageRequest.setOutboundMMSMessage(outboundSMSTextMessage);
+		if (rmsMmsNotificationRequestBean.getReceiptRequest() != null) {
+			outboundMMSMessageRequest.setReceiptRequest(rmsMmsNotificationRequestBean.getReceiptRequest());
+		}
+		outboundMMSMessageRequest.setSenderAddress(rmsMmsNotificationRequestBean.getSenderAddress());
+		outboundMMSMessageRequest.setSenderName(rmsMmsNotificationRequestBean.getSenderName());
+		OneApiMmsSendRequest oneapirequest = new OneApiMmsSendRequest();
+		oneapirequest.setOutboundMessageRequest(outboundMMSMessageRequest);
+		String mainJson = objmapper.writeValueAsString(oneapirequest);
+		logger.debug("oneapi json object to send sms: \n" + mainJson);
+		HttpEntity<String> mainJsonHttpEntity = new HttpEntity<String>(mainJson, buildRootFieldsHeader());
+		return mainJsonHttpEntity;
+	}
+	
+	public HttpEntity<MultiValueMap<String, Object>> buildInnerTextAttchmntEntity(ConferenceInviteIcs conferenceInviteIcs){
+		String message ="see the attached photo";
+		HttpEntity<String> textHttpEntity = new HttpEntity<String>(message,buildInlineHeader());
+		MultiValueMap<String, Object> innerMultipartRequest = new LinkedMultiValueMap<String, Object>();
+		String CreatedConference = conferenceInviteIcs.getIcoFile();
+		HttpEntity<String> attachmentRequestEntity = new HttpEntity<String>(
+				Base64.encodeBase64String(CreatedConference.getBytes()), buildCalendarInviteattachementHeader());
+		
+		innerMultipartRequest.add("text", textHttpEntity);
+		innerMultipartRequest.add("attachments", attachmentRequestEntity);
+		HttpEntity<MultiValueMap<String, Object>> innerTextAttchmntEntity = new HttpEntity<MultiValueMap<String, Object>>(innerMultipartRequest, buildAttachmentHeader());
+		logger.debug("InnerMultipartRequest\n" + innerMultipartRequest);
+		return innerTextAttchmntEntity;
+	}
+	
+	public HttpHeaders buildRootFieldsHeader(){
+		HttpHeaders multipartHeader = new HttpHeaders();
+		multipartHeader.add(HttpHeaders.CONTENT_DISPOSITION, "multipart/form-data; name=root-fields");
+		multipartHeader.setContentType(MediaType.APPLICATION_JSON);
+		return multipartHeader;
+	}
+	
+	public HttpHeaders buildAttachmentHeader(){
+		HttpHeaders innerHeader = new HttpHeaders();
+		innerHeader.add(HttpHeaders.CONTENT_DISPOSITION, "multipart/form-data; name= attachments");
+		innerHeader.add(HttpHeaders.CONTENT_TYPE, "multipart/mixed");
+		return innerHeader;
+	}
+	
+	public HttpHeaders buildInlineHeader(){
+		HttpHeaders inlineHeader = new HttpHeaders();
+		inlineHeader.add(HttpHeaders.CONTENT_DISPOSITION, "inline");
+		inlineHeader.setContentType(MediaType.TEXT_PLAIN);
+		return inlineHeader;
+	}
+	
+	public HttpHeaders buildRequestEntityHeaders(){
+		HttpHeaders reqEntityHeaders = new HttpHeaders();
+		reqEntityHeaders.add(HttpHeaders.CONTENT_TYPE, "multipart/form-data");
+		return reqEntityHeaders;
+	}
+	
+	public HttpHeaders buildCalendarInviteattachementHeader(){
+		HttpHeaders calendarInviteattachementHeader = new HttpHeaders();
+		calendarInviteattachementHeader.setContentType(new MediaType("text", FbiConferenceConstants.ICS));
+		calendarInviteattachementHeader.setContentDispositionFormData("attachment", "test.ics");
+		calendarInviteattachementHeader.add("Content-Transfer-Encoding", "base64");
+		return calendarInviteattachementHeader;
+	}
+}
